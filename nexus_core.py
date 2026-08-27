@@ -1,6 +1,5 @@
 import json
 import sqlite3
-import hash-chain if 'hashlib' in globals() else None
 import hashlib
 import time
 import sys
@@ -27,7 +26,6 @@ def init_nexus_db():
 class PermissionPolicy:
     @staticmethod
     def validate(request_context: dict) -> bool:
-        # Fail-closed enforcement
         if not request_context or not isinstance(request_context, dict):
             return False
         if not request_context.get("authenticated", False):
@@ -41,7 +39,6 @@ class AuditGate:
         self.conn = db_conn
 
     def process_forget(self, evidence_id: str) -> dict:
-        """Forget = ลบ Payload จริงจาก DB แต่คง Hash Tombstone ไว้"""
         cursor = self.conn.cursor()
         cursor.execute("SELECT payload FROM nexus_ledger WHERE id=?", (evidence_id,))
         row = cursor.fetchone()
@@ -55,7 +52,6 @@ class AuditGate:
         return {"status": "FORGOTTEN", "tombstone_hash": tombstone_hash}
 
     def process_retract(self, evidence_id: str, reason: str) -> dict:
-        """Retract = เก็บ Row ไว้ แต่เปลี่ยนสถานะเป็น RETRACTED ไม่ให้เชื่อ Claim เดิม"""
         cursor = self.conn.cursor()
         cursor.execute("UPDATE nexus_ledger SET status='RETRACTED' WHERE id=?", (evidence_id,))
         self.conn.commit()
